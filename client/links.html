@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyURL - קישורים</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head reveal">
+      <div>
+        <h1>הקישורים <span class="gradient-text">שלי</span></h1>
+        <p>יוצרים קישור קצר, מגדירים מקורות פרסום ומשתפים</p>
+      </div>
+      <select id="userSelect" class="inline-select">
+        <option value="">בחרו משתמש</option>
+      </select>
+    </div>
+
+    <div class="split">
+      <!-- ימין: טופס קישור חדש -->
+      <aside class="glass sticky reveal d1">
+        <h2><span class="icon">✨</span> <span id="formTitle">קישור חדש</span></h2>
+        <form id="linkForm">
+          <label class="field">כתובת מקורית
+            <input name="originalUrl" type="url" required placeholder="https://..." class="ltr">
+          </label>
+          <label class="field">שם פרמטר המקור
+            <input name="targetParamName" value="t" required class="ltr">
+          </label>
+
+          <div class="field" style="margin-bottom:8px">מקורות פרסום</div>
+          <div id="targetsBox"></div>
+          <button type="button" id="addTargetBtn" class="btn btn-sm" style="margin-bottom:20px">+ הוספת מקור</button>
+
+          <button type="submit" id="submitBtn" class="btn btn-primary btn-block">⚡ קיצור קישור</button>
+          <button type="button" id="cancelBtn" class="btn btn-block" style="margin-top:8px" hidden>ביטול עריכה</button>
+        </form>
+      </aside>
+
+      <!-- שמאל: הקישורים הקיימים -->
+      <section id="linksBox"></section>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script src="links.js"></script>
+</body>
+</html>

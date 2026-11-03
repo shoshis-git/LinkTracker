@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyURL - משתמשים</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head reveal">
+      <div>
+        <h1>ניהול <span class="gradient-text">משתמשים</span></h1>
+        <p>התחברו לחשבון קיים או צרו חשבון חדש</p>
+      </div>
+      <button class="btn btn-primary btn-lg" id="registerBtn">+ הרשמה</button>
+    </div>
+
+    <div class="split">
+      <!-- ימין: התחברות -->
+      <aside class="glass sticky reveal d1">
+        <h2><span class="icon">🔐</span> התחברות</h2>
+        <form id="loginForm">
+          <label class="field">אימייל
+            <input name="email" type="email" required placeholder="you@example.com" class="ltr">
+          </label>
+          <label class="field">סיסמה
+            <input name="password" type="password" required placeholder="••••••••">
+          </label>
+          <button type="submit" class="btn btn-primary btn-block">התחברות</button>
+        </form>
+        <p class="muted" style="font-size:14px; text-align:center; margin:18px 0 0">
+          אין לך חשבון? <a href="#" id="registerLink">להרשמה</a>
+        </p>
+      </aside>
+
+      <!-- שמאל: רשימת המשתמשים -->
+      <section class="glass reveal d2">
+        <h2><span class="icon" style="background: rgba(34,211,238,.15)">👥</span> כל המשתמשים
+          <span class="badge" id="usersCount" style="margin-right:auto">0</span>
+        </h2>
+        <div class="list" id="usersList"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- חלון קופץ: הרשמה / עריכה -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="glass modal">
+      <div class="modal-head">
+        <h2 id="modalTitle">הרשמה</h2>
+        <button class="close-btn" id="closeModal" type="button">✕</button>
+      </div>
+      <form id="userForm">
+        <label class="field">שם
+          <input name="name" required placeholder="השם שלך">
+        </label>
+        <label class="field">אימייל
+          <input name="email" type="email" required placeholder="you@example.com" class="ltr">
+        </label>
+        <label class="field">סיסמה
+          <input name="password" type="password" id="passwordInput" required placeholder="••••••••">
+        </label>
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">יצירת חשבון</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="users.js"></script>
+</body>
+</html>

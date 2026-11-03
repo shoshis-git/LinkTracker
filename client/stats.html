@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyURL - סטטיסטיקות</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="container">
+    <div class="page-head reveal">
+      <div>
+        <h1>סטטיסטיקות <span class="gradient-text">קליקים</span></h1>
+        <p>מאיפה מגיעים הקליקים, על מה לוחצים, ומתי</p>
+      </div>
+      <div class="row">
+        <select id="userSelect" class="inline-select"><option value="">בחרו משתמש</option></select>
+        <select id="linkSelect" class="inline-select"><option value="">בחרו קישור</option></select>
+      </div>
+    </div>
+
+    <section class="kpis">
+      <div class="glass kpi reveal d1">
+        <div class="label">👆 סה"כ קליקים</div>
+        <div class="value gradient-text" id="kpiClicks">–</div>
+      </div>
+      <div class="glass kpi reveal d1">
+        <div class="label">🔗 קישורים</div>
+        <div class="value gradient-text" id="kpiLinks">–</div>
+      </div>
+      <div class="glass kpi reveal d2">
+        <div class="label">👤 מבקרים ייחודיים (IP)</div>
+        <div class="value gradient-text" id="kpiUnique">–</div>
+      </div>
+      <div class="glass kpi reveal d3">
+        <div class="label">🔥 היום החזק בשבוע</div>
+        <div class="value gradient-text" id="kpiDay">–</div>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="glass reveal d1">
+        <div class="chart-head">
+          <h2>🎯 קליקים על הקישור לפי מקור</h2>
+          <select class="typeSelect" data-chart="byTarget">
+            <option value="doughnut">דונאט</option>
+            <option value="pie">עוגה</option>
+            <option value="bar">עמודות</option>
+            <option value="polarArea">קוטבי</option>
+          </select>
+        </div>
+        <div class="chart-box">
+          <canvas id="byTarget"></canvas>
+          <div class="empty" id="byTargetEmpty">בחרו קישור</div>
+        </div>
+      </div>
+
+      <div class="glass reveal d2">
+        <div class="chart-head">
+          <h2>🔗 קליקים לפי קישור</h2>
+          <select class="typeSelect" data-chart="byLink">
+            <option value="bar">עמודות</option>
+            <option value="doughnut">דונאט</option>
+            <option value="pie">עוגה</option>
+            <option value="line">קווים</option>
+          </select>
+        </div>
+        <div class="chart-box">
+          <canvas id="byLink"></canvas>
+          <div class="empty" id="byLinkEmpty">בחרו משתמש</div>
+        </div>
+      </div>
+
+      <div class="glass reveal d3">
+        <div class="chart-head">
+          <h2>📅 קליקים לפי יום בשבוע</h2>
+          <select class="typeSelect" data-chart="byDay">
+            <option value="bar">עמודות</option>
+            <option value="line">קווים</option>
+            <option value="radar">רדאר</option>
+            <option value="polarArea">קוטבי</option>
+          </select>
+        </div>
+        <div class="chart-box">
+          <canvas id="byDay"></canvas>
+          <div class="empty" id="byDayEmpty">בחרו משתמש</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="common.js"></script>
+  <script src="stats.js"></script>
+</body>
+</html>
