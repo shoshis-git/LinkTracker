@@ -7,4 +7,6 @@ LinkRouter.get('/:id', LinkController.getById);
 LinkRouter.post('/', LinkController.add);
 LinkRouter.put('/:id', LinkController.update);
 LinkRouter.delete('/:id', LinkController.delete);
+LinkRouter.get('/:id/stats', LinkController.getStats);
+
 export default LinkRouter;

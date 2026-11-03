@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyURL - סטטיסטיקות</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>TinyURL - סטטיסטיקות קליקים</h1>
+
+  <div class="controls">
+    <label>משתמש:
+      <select id="userSelect"><option value="">בחרי משתמש</option></select>
+    </label>
+    <label>קישור:
+      <select id="linkSelect"><option value="">בחרי קישור</option></select>
+    </label>
+  </div>
+  <p id="error" class="error"></p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-header">
+        <h2>קליקים על הקישור לפי מקור</h2>
+        <select class="typeSelect" data-chart="byTarget">
+          <option value="pie">עוגה</option>
+          <option value="bar">עמודות</option>
+          <option value="doughnut">דונאט</option>
+          <option value="polarArea">קוטבי</option>
+        </select>
+      </div>
+      <canvas id="byTarget"></canvas>
+      <p class="empty" id="byTargetEmpty">בחרי קישור</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>קליקים לפי קישור</h2>
+        <select class="typeSelect" data-chart="byLink">
+          <option value="bar">עמודות</option>
+          <option value="pie">עוגה</option>
+          <option value="doughnut">דונאט</option>
+          <option value="line">קווים</option>
+        </select>
+      </div>
+      <canvas id="byLink"></canvas>
+      <p class="empty" id="byLinkEmpty">בחרי משתמש</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>קליקים לפי יום בשבוע</h2>
+        <select class="typeSelect" data-chart="byDay">
+          <option value="bar">עמודות</option>
+          <option value="line">קווים</option>
+          <option value="radar">רדאר</option>
+          <option value="pie">עוגה</option>
+        </select>
+      </div>
+      <canvas id="byDay"></canvas>
+      <p class="empty" id="byDayEmpty">בחרי משתמש</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

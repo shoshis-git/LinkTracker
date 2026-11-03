@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cors from 'cors';
 
 import linkRouter from './Routes/LinkRouter.js';
 import userRouter from './Routes/UserRouter.js';
@@ -9,6 +10,7 @@ import LinkController from './Controllers/LinkController.js';
 
 dotenv.config();
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.use('/links', linkRouter);

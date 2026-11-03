@@ -12,13 +12,17 @@ const LinkController = {
       const link = await Link.findById(req.params.id);
       if (!link) return res.status(404).json({ message: 'Not found' });
       res.json(link);
-    } catch (e) { res.status(500).json({ message: e.message }); }
+    } catch (e) { res.status(400).json({ message: e.message }); }
   },
   add: async (req, res) => {
     try {
-      const link = await Link.create({ originalUrl: req.body.originalUrl });
+      const link = await Link.create({
+        originalUrl: req.body.originalUrl,
+        targetParamName: req.body.targetParamName,
+        targetValues: req.body.targetValues
+      });
       if (req.body.userId)
-          await User.findByIdAndUpdate(req.body.userId, { $push: { links: link._id } });
+        await User.findByIdAndUpdate(req.body.userId, { $push: { links: link._id } });
       res.status(201).json(link);
     } catch (e) { res.status(400).json({ message: e.message }); }
   },
@@ -26,7 +30,7 @@ const LinkController = {
     try {
       const link = await Link.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
       res.json(link);
-    } catch (e) { res.status(400).json({ message: e.message }); }
+    } catch (e) { res.status(404).json({ message: 'Not Found' }); }
   },
   delete: async (req, res) => {
     try {
@@ -36,16 +40,38 @@ const LinkController = {
     } catch (e) { res.status(500).json({ message: e.message }); }
   },
   redirect: async (req, res) => {
-  try {
-    const link = await Link.findByIdAndUpdate(
-      req.params.id,
-      { $push: { clicks: { ipAddress: req.ip } } },
-      { returnDocument: 'after' }
-    );
-    if (!link) return res.status(404).json({ message: 'Link not found' });
-    res.redirect(302, link.originalUrl);
-  } catch (e) { res.status(400).json({ message: e.message }); }
-},
+    try {
+      const link = await Link.findById(req.params.id);
+      if (!link) return res.status(404).json({ message: 'Link not found' });
+      const targetValue = req.query[link.targetParamName];
+      link.clicks.push({ ipAddress: req.ip, targetParamValue: targetValue });
+      await link.save();
 
-};
+      res.redirect(302, link.originalUrl);
+
+
+    } catch (e) { res.status(400).json({ message: e.message }); }
+  },
+
+getStats: async (req, res) => {
+    try {
+      const link = await Link.findById(req.params.id);
+      if (!link) return res.status(404).json({ message: 'Link not found' });
+
+      const stats = {};
+      link.clicks.forEach(click => {
+        const value = click.targetParamValue;
+        const target = link.targetValues.find(t => t.value === value);
+        const name = target ? target.name : 'unknown';
+        stats[name] = (stats[name] || 0) + 1;
+
+      });
+
+      res.json({ total: link.clicks.length, byTarget: stats });
+    } catch (e) {  res.status(500).json({ message: e.message });}
+    
+    
+  }
+
+}
 export default LinkController;
