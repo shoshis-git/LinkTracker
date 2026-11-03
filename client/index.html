@@ -3,67 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TinyURL - סטטיסטיקות</title>
+  <title>TinyURL - קישורים קצרים, תובנות גדולות</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>TinyURL - סטטיסטיקות קליקים</h1>
+  <main class="container">
 
-  <div class="controls">
-    <label>משתמש:
-      <select id="userSelect"><option value="">בחרי משתמש</option></select>
-    </label>
-    <label>קישור:
-      <select id="linkSelect"><option value="">בחרי קישור</option></select>
-    </label>
-  </div>
-  <p id="error" class="error"></p>
-
-  <div class="cards">
-    <div class="card">
-      <div class="card-header">
-        <h2>קליקים על הקישור לפי מקור</h2>
-        <select class="typeSelect" data-chart="byTarget">
-          <option value="pie">עוגה</option>
-          <option value="bar">עמודות</option>
-          <option value="doughnut">דונאט</option>
-          <option value="polarArea">קוטבי</option>
-        </select>
+    <section class="hero">
+      <div class="reveal">
+        <div class="pill"><span class="pulse"></span> מעקב קליקים בזמן אמת</div>
+        <h1>קישורים קצרים.<br><span class="gradient-text">תובנות גדולות.</span></h1>
+        <p>
+          הופכים כל קישור ארוך לכתובת קצרה וידידותית, עוקבים אחרי כל קליק,
+          ומגלים בדיוק איזה ערוץ פרסום מביא לכם הכי הרבה חשיפה.
+        </p>
+        <div class="row">
+          <a href="links.html" class="btn btn-primary btn-lg">צרו קישור עכשיו ←</a>
+          <a href="stats.html" class="btn btn-lg">לסטטיסטיקות</a>
+        </div>
       </div>
-      <canvas id="byTarget"></canvas>
-      <p class="empty" id="byTargetEmpty">בחרי קישור</p>
-    </div>
 
-    <div class="card">
-      <div class="card-header">
-        <h2>קליקים לפי קישור</h2>
-        <select class="typeSelect" data-chart="byLink">
-          <option value="bar">עמודות</option>
-          <option value="pie">עוגה</option>
-          <option value="doughnut">דונאט</option>
-          <option value="line">קווים</option>
-        </select>
+      <div class="glass demo reveal d2">
+        <div class="demo-step">הקישור המקורי</div>
+        <div class="demo-url ltr mono">https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_link</div>
+        <div class="demo-arrow">⬇</div>
+        <div class="demo-short ltr mono"><span class="gradient-text">tinyurl.co.il/14875</span></div>
+        <div class="demo-bars">
+          <div style="height:45%; animation-delay:.1s"></div>
+          <div style="height:70%; animation-delay:.2s"></div>
+          <div style="height:55%; animation-delay:.3s"></div>
+          <div style="height:95%; animation-delay:.4s"></div>
+          <div style="height:65%; animation-delay:.5s"></div>
+          <div style="height:80%; animation-delay:.6s"></div>
+          <div style="height:40%; animation-delay:.7s"></div>
+        </div>
       </div>
-      <canvas id="byLink"></canvas>
-      <p class="empty" id="byLinkEmpty">בחרי משתמש</p>
-    </div>
+    </section>
 
-    <div class="card">
-      <div class="card-header">
-        <h2>קליקים לפי יום בשבוע</h2>
-        <select class="typeSelect" data-chart="byDay">
-          <option value="bar">עמודות</option>
-          <option value="line">קווים</option>
-          <option value="radar">רדאר</option>
-          <option value="pie">עוגה</option>
-        </select>
+    <section class="counters">
+      <div class="glass counter reveal d1">
+        <div class="value gradient-text" id="countUsers">0</div>
+        <div class="label">משתמשים רשומים</div>
       </div>
-      <canvas id="byDay"></canvas>
-      <p class="empty" id="byDayEmpty">בחרי משתמש</p>
-    </div>
-  </div>
+      <div class="glass counter reveal d2">
+        <div class="value gradient-text" id="countLinks">0</div>
+        <div class="label">קישורים מקוצרים</div>
+      </div>
+      <div class="glass counter reveal d3">
+        <div class="value gradient-text" id="countClicks">0</div>
+        <div class="label">קליקים נמדדו</div>
+      </div>
+    </section>
 
-  <script src="app.js"></script>
+    <h2 class="section-title">כל מה שצריך כדי לפרסם <span class="gradient-text">חכם יותר</span></h2>
+    <p class="section-sub">שלושה כלים שעובדים יחד</p>
+
+    <section class="features">
+      <div class="glass feature">
+        <div class="icon">✂️</div>
+        <h3>Shortening</h3>
+        <p>קישור ארוך ומסורבל הופך לכתובת קצרה ונקייה שנוח לשתף בכל מקום - פוסט, מייל או הודעה.</p>
+      </div>
+      <div class="glass feature">
+        <div class="icon" style="background: rgba(34,211,238,.15)">📈</div>
+        <h3>Tracking</h3>
+        <p>כל לחיצה נשמרת עם זמן וכתובת IP, כך שתמיד תדעו כמה אנשים באמת הגיעו לדף שלכם.</p>
+      </div>
+      <div class="glass feature">
+        <div class="icon" style="background: rgba(244,114,182,.15)">🎯</div>
+        <h3>Targeting</h3>
+        <p>קישור נפרד לכל ערוץ פרסום - פייסבוק, מייל, פורומים - ופילוח מדויק של הקליקים לפי מקור.</p>
+      </div>
+    </section>
+
+    <h2 class="section-title">איך זה <span class="gradient-text">עובד?</span></h2>
+    <p class="section-sub">שלושה צעדים ואתם בפנים</p>
+
+    <section class="steps">
+      <div class="glass step">
+        <div class="num gradient-text">01</div>
+        <h3>נרשמים</h3>
+        <p>יוצרים חשבון בכמה שניות ומתחברים למערכת.</p>
+      </div>
+      <div class="glass step">
+        <div class="num gradient-text">02</div>
+        <h3>מקצרים</h3>
+        <p>מדביקים קישור, מגדירים מקורות פרסום ומקבלים קישור קצר לכל ערוץ.</p>
+      </div>
+      <div class="glass step">
+        <div class="num gradient-text">03</div>
+        <h3>מודדים</h3>
+        <p>צופים בגרפים: קליקים לפי מקור, לפי קישור ולפי יום בשבוע.</p>
+      </div>
+    </section>
+
+    <section class="glass cta">
+      <h2>מוכנים להתחיל?</h2>
+      <p>הקישור הקצר הראשון שלכם במרחק לחיצה</p>
+      <a href="users.html#register" class="btn btn-primary btn-lg">הרשמה בחינם</a>
+    </section>
+
+  </main>
+
+  <footer>TinyURL © 2026 · נבנה עם Node.js, MongoDB ו-Chart.js</footer>
+
+  <script src="common.js"></script>
+  <script src="home.js"></script>
 </body>
 </html>
