@@ -1,10 +1,192 @@
-@"
-# LinkTracker
+# LinkTracker - שירות לקיצור קישורים ומעקב קליקים
 
-A URL shortening service built with Node.js.
+LinkTracker (TinyURL) הוא שירות לקיצור כתובות URL, המיועד לעסקים שמפרסמים קישורים לדפי נחיתה, אתרים וקבצים.
+הלקוח מזין כתובת ארוכה ומקבל קישור קצר, למשל:
 
-## Features
-- URL Shortening
-- Click Tracking
-- Target-based Analytics
-"@ | Out-File -FilePath README.md -Encoding utf8
+```
+https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_link
+                                   ⬇
+                       http://localhost:3000/<id>
+```
+
+כשמשתמש קצה לוחץ על הקישור הקצר, השרת שומר את הקליק ומפנה אותו (HTTP Redirect) לכתובת המקורית.
+כך בעל העסק יכול לדעת כמה אנשים לחצו על הקישור, ומאיזה ערוץ פרסום הם הגיעו.
+
+## יכולות
+
+| יכולת | תיאור |
+|---|---|
+| **Shortening** | הפיכת כתובת ארוכה לקישור קצר, שמורכב מכתובת השירות ומהמזהה של הקישור במסד הנתונים |
+| **Tracking** | שמירה של כל קליק, עם הזמן וכתובת ה-IP של מי שלחץ, לפני ההפניה לכתובת המקורית |
+| **Targeting** | הגדרת מקורות פרסום לאותו קישור (פייסבוק, מייל, פורומים...), ופילוח הקליקים לפי מקור |
+
+בנוסף:
+- הרשמה והתחברות עם **JWT**. כל משתמש רואה ומנהל רק את הקישורים שלו.
+- הסיסמאות נשמרות כ-hash עם **bcrypt**.
+- **אפליקציית קליינט** עם גרפים (Chart.js): קליקים לפי מקור, לפי קישור ולפי יום בשבוע.
+
+## טכנולוגיות
+
+- **שרת:** Node.js, Express 5
+- **מסד נתונים:** MongoDB עם Mongoose
+- **אבטחה:** jsonwebtoken, bcryptjs, cors
+- **קליינט:** HTML, CSS, JavaScript (בלי framework), Chart.js
+
+## מבנה הפרויקט
+
+```
+├── index.js                  # נקודת הכניסה: חיבור ל-MongoDB, הגדרת ה-routes והפעלת השרת
+├── Models/
+│   ├── User.js               # משתמש: שם, אימייל, סיסמה (hash), מערך מזהי קישורים
+│   └── link.js               # קישור: כתובת מקורית, קליקים, פרמטר ומקורות target
+├── Controllers/
+│   ├── UserController.js     # הרשמה, התחברות, שליפה, עדכון ומחיקה של משתמש
+│   └── LinkController.js     # CRUD לקישורים, redirect, סטטיסטיקות וסיכום כללי
+├── Routes/
+│   ├── UserRouter.js         # /users
+│   └── LinkRouter.js         # /links
+├── Middleware/
+│   └── auth.js               # בדיקת טוקן JWT בבקשות מוגנות
+└── client/                   # אפליקציית הקליינט
+    ├── index.html            # דף הבית
+    ├── users.html            # התחברות, הרשמה והחשבון שלי
+    ├── links.html            # יצירה וניהול של קישורים
+    ├── stats.html            # גרפים וסטטיסטיקות
+    ├── common.js             # פונקציות משותפות: בקשות לשרת, ניהול התחברות, תפריט עליון
+    └── style.css
+```
+
+## מבנה הנתונים
+
+**users**
+```js
+{
+  _id: ObjectId,
+  name: String,
+  email: String,          // ייחודי
+  password: String,       // נשמר כ-hash
+  links: [ObjectId]       // מזהים של הקישורים של המשתמש
+}
+```
+
+**links**
+```js
+{
+  _id: ObjectId,
+  originalUrl: String,
+  clicks: [
+    { _id: ObjectId, insertedAt: Date, ipAddress: String, targetParamValue: String }
+  ],
+  targetParamName: String,  // ברירת מחדל: "t"
+  targetValues: [
+    { _id: ObjectId, name: String, value: String }
+  ]
+}
+```
+
+הקשר בין משתמש לקישורים נשמר כמערך מזהים אצל המשתמש, כי לא תמיד צריך את הקישורים כששולפים משתמש.
+לעומת זאת, הקליקים נשמרים **בתוך** הקישור, כי הם חלק בלתי נפרד ממנו ובדרך כלל מציגים אותם יחד.
+
+## התקנה והרצה
+
+1. התקנת הספריות:
+   ```
+   npm install
+   ```
+2. יצירת קובץ `.env` בתיקייה הראשית (אפשר להעתיק מ-`.env.example`):
+   ```
+   MONGO_URI=mongodb://localhost:27017/tinyurl
+   PORT=3000
+   JWT_SECRET=<מחרוזת אקראית ארוכה>
+   ```
+3. הרצת השרת:
+   ```
+   npm run dev     # פיתוח, עם nodemon
+   npm start       # הרצה רגילה
+   ```
+4. הקליינט: פותחים את `client/index.html` בדפדפן, או עם התוסף Live Server של VS Code.
+   הכתובת של השרת מוגדרת בשורה הראשונה של `client/common.js`.
+
+## API
+
+בקשות שמסומנות 🔒 דורשות את הכותרת:
+```
+Authorization: Bearer <token>
+```
+את הטוקן מקבלים בתשובה להרשמה או להתחברות. הוא בתוקף ל-24 שעות.
+
+### Redirect
+| Method | Path | תיאור |
+|---|---|---|
+| GET | `/:id` | שומר קליק ומפנה (302) לכתובת המקורית. אם יש בכתובת פרמטר בשם של `targetParamName` (למשל `?t=fb`), הערך שלו נשמר כמקור של הקליק |
+
+### משתמשים - `/users`
+| Method | Path | | תיאור |
+|---|---|---|---|
+| POST | `/users` | | הרשמה. גוף הבקשה: `{ name, email, password }`. מחזיר `{ token, user }` |
+| POST | `/users/login` | | התחברות. גוף הבקשה: `{ email, password }`. מחזיר `{ token, user }` |
+| GET | `/users/:id` | 🔒 | פרטי המשתמש (רק של המשתמש המחובר) |
+| PUT | `/users/:id` | 🔒 | עדכון `name`, `email` או `password` |
+| DELETE | `/users/:id` | 🔒 | מחיקת המשתמש וכל הקישורים שלו |
+
+### קישורים - `/links`
+| Method | Path | | תיאור |
+|---|---|---|---|
+| GET | `/links/summary` | | מספר המשתמשים, הקישורים והקליקים במערכת (לדף הבית) |
+| GET | `/links` | 🔒 | כל הקישורים של המשתמש המחובר |
+| GET | `/links/:id` | 🔒 | קישור אחד |
+| POST | `/links` | 🔒 | יצירת קישור. גוף הבקשה: `{ originalUrl, targetParamName?, targetValues? }` |
+| PUT | `/links/:id` | 🔒 | עדכון `originalUrl`, `targetParamName` או `targetValues` |
+| DELETE | `/links/:id` | 🔒 | מחיקת קישור |
+| GET | `/links/:id/stats` | 🔒 | פילוח הקליקים לפי מקור |
+
+דוגמה לתשובה של `/links/:id/stats`:
+```json
+{ "total": 4, "byTarget": { "פייסבוק": 2, "מייל": 1, "unknown": 1 } }
+```
+קליק בלי פרמטר target, או עם ערך שלא מוגדר ב-`targetValues`, נספר כ-`unknown`.
+
+### הרשאות
+- בלי טוקן, או עם טוקן לא תקין: `401`
+- גישה למשתמש אחר: `403`
+- גישה לקישור של משתמש אחר: `404`, כדי לא לחשוף שהקישור קיים
+- אי אפשר לשנות קליקים דרך ה-API. הם נוצרים רק דרך ה-redirect.
+
+## דוגמה לשימוש ב-Targeting
+
+יוצרים קישור עם מקורות:
+```json
+POST /links
+{
+  "originalUrl": "https://shop.example.com/summer-sale",
+  "targetValues": [
+    { "name": "פייסבוק", "value": "fb" },
+    { "name": "מייל", "value": "mail" }
+  ]
+}
+```
+ומפרסמים כתובת אחרת בכל ערוץ:
+```
+http://localhost:3000/<id>?t=fb     ← בפייסבוק
+http://localhost:3000/<id>?t=mail   ← ברשימת התפוצה
+```
+עכשיו `GET /links/<id>/stats` מראה כמה קליקים הגיעו מכל ערוץ.
+
+## הקליינט
+
+| עמוד | מה יש בו |
+|---|---|
+| **בית** | הסבר על השירות ומונים חיים של משתמשים, קישורים וקליקים |
+| **החשבון שלי** | התחברות והרשמה. אחרי ההתחברות: פרופיל, עריכת פרטים, מחיקת חשבון והקישורים האחרונים |
+| **הקישורים שלי** | טופס ליצירת קישור עם מקורות פרסום, ורשימת הקישורים עם העתקה מהירה של הקישור הקצר ושל הקישור לכל מקור |
+| **סטטיסטיקות** | כרטיסי סיכום וגרפים: קליקים לפי מקור, לפי קישור ולפי יום בשבוע. אפשר להחליף את סוג הגרף (עמודות, עוגה, דונאט, קווים ועוד) |
+
+## תהליך הפיתוח
+
+הפרויקט פותח בשלושה ספרינטים (Agile), והמשימות נוהלו ב-GitHub Projects:
+
+1. **Base API**: מודלים, Controllers ו-Routers למשתמשים ולקישורים, עם פעולות שליפה, הוספה, עדכון ומחיקה.
+2. **Tracking**: מנגנון ה-redirect ושמירת הקליקים.
+3. **Targeting**: מקורות פרסום וסטטיסטיקות לפי מקור.
+
+אחרי שלושת הספרינטים נוספו הצפנת סיסמאות, התחברות עם JWT ואפליקציית הקליינט עם Chart.js.
