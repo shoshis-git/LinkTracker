@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TinyURL - סטטיסטיקות</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -15,7 +16,6 @@
         <p>מאיפה מגיעים הקליקים, על מה לוחצים, ומתי</p>
       </div>
       <div class="row">
-        <select id="userSelect" class="inline-select"><option value="">בחרו משתמש</option></select>
         <select id="linkSelect" class="inline-select"><option value="">בחרו קישור</option></select>
       </div>
     </div>
@@ -68,7 +68,7 @@
         </div>
         <div class="chart-box">
           <canvas id="byLink"></canvas>
-          <div class="empty" id="byLinkEmpty">בחרו משתמש</div>
+          <div class="empty" id="byLinkEmpty">טוען…</div>
         </div>
       </div>
 
@@ -84,7 +84,7 @@
         </div>
         <div class="chart-box">
           <canvas id="byDay"></canvas>
-          <div class="empty" id="byDayEmpty">בחרו משתמש</div>
+          <div class="empty" id="byDayEmpty">טוען…</div>
         </div>
       </div>
     </section>

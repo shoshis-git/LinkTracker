@@ -1,4 +1,3 @@
-// אנימציה של מספר שעולה מ-0 עד הערך הסופי
 function countUp(id, target) {
   const element = document.getElementById(id);
   const duration = 1200;
@@ -13,12 +12,11 @@ function countUp(id, target) {
 }
 
 async function loadCounters() {
-  const [users, links] = await Promise.all([request('/users'), request('/links')]);
-  const clicks = links.reduce((sum, link) => sum + link.clicks.length, 0);
-  countUp('countUsers', users.length);
-  countUp('countLinks', links.length);
-  countUp('countClicks', clicks);
+  const summary = await request('/links/summary');
+  countUp('countUsers', summary.users);
+  countUp('countLinks', summary.links);
+  countUp('countClicks', summary.clicks);
 }
 
-// בדף הבית לא מציגים שגיאה אם השרת כבוי - המונים פשוט נשארים 0
+
 loadCounters().catch(() => {});

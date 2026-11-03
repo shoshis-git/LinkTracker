@@ -3,48 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TinyURL - משתמשים</title>
+  <title>TinyURL - החשבון שלי</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="container">
-    <div class="page-head reveal">
-      <div>
-        <h1>ניהול <span class="gradient-text">משתמשים</span></h1>
-        <p>התחברו לחשבון קיים או צרו חשבון חדש</p>
+
+    
+    <div id="guestView" hidden>
+      <div class="page-head reveal">
+        <div>
+          <h1>ברוכים <span class="gradient-text">הבאים</span></h1>
+          <p>התחברו לחשבון שלכם או צרו חשבון חדש</p>
+        </div>
+        <button class="btn btn-primary btn-lg" data-open-register>+ הרשמה</button>
       </div>
-      <button class="btn btn-primary btn-lg" id="registerBtn">+ הרשמה</button>
+
+      <div class="split">
+        
+        <aside class="glass sticky reveal d1">
+          <h2><span class="icon">🔐</span> התחברות</h2>
+          <form id="loginForm">
+            <label class="field">אימייל
+              <input name="email" type="email" required placeholder="you@example.com" class="ltr">
+            </label>
+            <label class="field">סיסמה
+              <input name="password" type="password" required placeholder="••••••••">
+            </label>
+            <button type="submit" class="btn btn-primary btn-block">התחברות</button>
+          </form>
+          <p class="muted" style="font-size:14px; text-align:center; margin:18px 0 0">
+            אין לך חשבון? <a href="#" data-open-register>להרשמה</a>
+          </p>
+        </aside>
+
+       
+        <section class="glass reveal d2">
+          <h2><span class="icon" style="background: rgba(34,211,238,.15)">🚀</span> חדשים ב-TinyURL?</h2>
+          <div class="list">
+            <div class="list-item">
+              <div class="avatar">✂️</div>
+              <div class="grow"><div class="title">קישורים קצרים ונקיים</div><div class="sub">כל קישור ארוך הופך לכתובת קצרה לשיתוף</div></div>
+            </div>
+            <div class="list-item">
+              <div class="avatar">🎯</div>
+              <div class="grow"><div class="title">קישור לכל ערוץ פרסום</div><div class="sub">פייסבוק, מייל, פורומים - כל אחד עם מקור משלו</div></div>
+            </div>
+            <div class="list-item">
+              <div class="avatar">📊</div>
+              <div class="grow"><div class="title">גרפים ותובנות</div><div class="sub">קליקים לפי מקור, לפי קישור ולפי יום בשבוע</div></div>
+            </div>
+            <div class="list-item">
+              <div class="avatar">🔒</div>
+              <div class="grow"><div class="title">פרטי ומאובטח</div><div class="sub">רק אתם רואים את הקישורים והנתונים שלכם</div></div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" style="margin-top:20px" data-open-register>יצירת חשבון בחינם</button>
+        </section>
+      </div>
     </div>
 
-    <div class="split">
-      <!-- ימין: התחברות -->
-      <aside class="glass sticky reveal d1">
-        <h2><span class="icon">🔐</span> התחברות</h2>
-        <form id="loginForm">
-          <label class="field">אימייל
-            <input name="email" type="email" required placeholder="you@example.com" class="ltr">
-          </label>
-          <label class="field">סיסמה
-            <input name="password" type="password" required placeholder="••••••••">
-          </label>
-          <button type="submit" class="btn btn-primary btn-block">התחברות</button>
-        </form>
-        <p class="muted" style="font-size:14px; text-align:center; margin:18px 0 0">
-          אין לך חשבון? <a href="#" id="registerLink">להרשמה</a>
-        </p>
-      </aside>
+   
+    <div id="userView" hidden>
+      <div class="page-head reveal">
+        <div>
+          <h1>החשבון <span class="gradient-text">שלי</span></h1>
+          <p>הפרטים שלך וסקירה מהירה של הקישורים</p>
+        </div>
+        <a href="links.html" class="btn btn-primary btn-lg">+ קישור חדש</a>
+      </div>
 
-      <!-- שמאל: רשימת המשתמשים -->
-      <section class="glass reveal d2">
-        <h2><span class="icon" style="background: rgba(34,211,238,.15)">👥</span> כל המשתמשים
-          <span class="badge" id="usersCount" style="margin-right:auto">0</span>
-        </h2>
-        <div class="list" id="usersList"></div>
-      </section>
+      <div class="split">
+        <!-- ימין: פרופיל -->
+        <aside class="glass sticky reveal d1" style="text-align:center">
+          <div class="avatar" id="profileAvatar" style="width:90px;height:90px;font-size:38px;margin:6px auto 16px"></div>
+          <h2 id="profileName" style="justify-content:center;margin-bottom:4px"></h2>
+          <div class="muted ltr" id="profileEmail"></div>
+
+          <div class="kpis" style="grid-template-columns:1fr 1fr;margin:24px 0">
+            <div class="glass kpi" style="padding:14px"><div class="label">קישורים</div><div class="value gradient-text" id="profileLinks">0</div></div>
+            <div class="glass kpi" style="padding:14px"><div class="label">קליקים</div><div class="value gradient-text" id="profileClicks">0</div></div>
+          </div>
+
+          <button class="btn btn-block" id="editBtn">✏️ עריכת פרטים</button>
+          <button class="btn btn-block" style="margin-top:8px" onclick="logout()">🚪 יציאה</button>
+          <button class="btn btn-block btn-danger" style="margin-top:8px" id="deleteBtn">מחיקת החשבון</button>
+        </aside>
+
+        
+        <section class="glass reveal d2">
+          <h2><span class="icon" style="background: rgba(34,211,238,.15)">🔗</span> הקישורים האחרונים
+            <a href="links.html" class="btn btn-sm" style="margin-right:auto">לכל הקישורים</a>
+          </h2>
+          <div class="list" id="recentLinks"></div>
+        </section>
+      </div>
     </div>
   </main>
 
-  <!-- חלון קופץ: הרשמה / עריכה -->
+  
   <div class="modal-backdrop" id="modal" hidden>
     <div class="glass modal">
       <div class="modal-head">
