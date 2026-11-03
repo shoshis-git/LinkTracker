@@ -1,5 +1,6 @@
 
 import User from '../Models/User.js';
+import Link from '../Models/link.js';
 
 const UserController={
 
@@ -24,13 +25,14 @@ const UserController={
     },
     update: async (req, res) => {
         try {
-            const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+            const user = await User.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
             res.json(user);
         } catch (e) { res.status(400).json({ message: e.message }); }
     },
     delete: async (req, res) => {
         try {
-            await User.findByIdAndDelete(req.params.id);
+            const user = await User.findByIdAndDelete(req.params.id);
+            if (user) await Link.deleteMany({ _id: { $in: user.links } });
             res.json({ message: 'Deleted' });
         } catch (e) { res.status(500).json({ message: e.message }); }
     }
