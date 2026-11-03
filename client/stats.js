@@ -1,7 +1,7 @@
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const COLORS = ['#8b5cf6', '#22d3ee', '#f472b6', '#facc15', '#34d399', '#fb923c', '#60a5fa', '#f87171', '#a3e635', '#e879f9'];
 
-// עיצוב כהה לכל הגרפים
+
 Chart.defaults.color = '#9b99c2';
 Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
 Chart.defaults.font.family = 'Rubik, Arial, sans-serif';
@@ -9,11 +9,8 @@ Chart.defaults.plugins.tooltip.backgroundColor = '#1b1b3d';
 Chart.defaults.plugins.tooltip.padding = 12;
 Chart.defaults.plugins.tooltip.cornerRadius = 10;
 
-const userSelect = document.getElementById('userSelect');
 const linkSelect = document.getElementById('linkSelect');
 
-// לכל גרף שומרים את הנתונים האחרונים ואת האובייקט של Chart.js,
-// כדי שאפשר יהיה לצייר אותו מחדש כשמחליפים סוג גרף
 const charts = {
   byTarget: { chart: null, data: null },
   byLink: { chart: null, data: null },
@@ -88,9 +85,8 @@ function drawChart(key) {
   });
 }
 
-// ---------- בניית הנתונים ----------
 
-// גרף 1: קליקים על קישור אחד לפי מקור (target) - מה-endpoint של ספרינט 3
+
 async function loadLinkStats(linkId) {
   const stats = await request(`/links/${linkId}/stats`);
   charts.byTarget.data = {
@@ -100,7 +96,7 @@ async function loadLinkStats(linkId) {
   drawChart('byTarget');
 }
 
-// גרף 2: כמות קליקים כוללת לכל קישור של המשתמש
+
 function buildByLink(links) {
   return {
     labels: links.map(l => shortUrl(l.originalUrl, 22)),
@@ -108,7 +104,7 @@ function buildByLink(links) {
   };
 }
 
-// גרף 3: כל הקליקים של כל הקישורים של המשתמש, לפי יום בשבוע
+
 function buildByDay(links) {
   const counts = [0, 0, 0, 0, 0, 0, 0];
   links.forEach(link => {
@@ -129,13 +125,15 @@ function updateKpis(links, byDay) {
   document.getElementById('kpiDay').textContent = max > 0 ? byDay.labels[byDay.values.indexOf(max)] : '–';
 }
 
-async function loadUser(userId) {
-  const links = await request(`/users/${userId}/links`);
+async function loadMyLinks() {
+  const links = await request('/links');
 
   linkSelect.innerHTML = '';
   linkSelect.add(new Option('בחרו קישור', ''));
   links.forEach(l => {
-    linkSelect.add(new Option(`${shortUrl(l.originalUrl, 30)} (${l.clicks.length})`, l._id));
+    const option = new Option(shortUrl(l.originalUrl, 40), l._id);
+    option.dataset.badge = `${l.clicks.length} קליקים`;
+    linkSelect.add(option);
   });
 
   charts.byLink.data = buildByLink(links);
@@ -147,7 +145,7 @@ async function loadUser(userId) {
   drawChart('byDay');
   drawChart('byTarget');
 
-  // אם יש קישור אחד בלבד - בוחרים אותו אוטומטית
+ 
   if (links.length === 1) {
     linkSelect.value = links[0]._id;
     await loadLinkStats(links[0]._id);
@@ -155,25 +153,14 @@ async function loadUser(userId) {
 }
 
 async function init() {
-  const users = await request('/users');
-  users.forEach(u => userSelect.add(new Option(`${u.name} (${u.email})`, u._id)));
+  await loadMyLinks();
 
-  // הגעה מעמוד הקישורים: stats.html?user=<id>&link=<id>, ואם אין - המשתמש המחובר
-  const params = new URLSearchParams(location.search);
-  const userId = params.get('user') || getCurrentUser()?._id;
-  if (userId && users.some(u => u._id === userId)) {
-    userSelect.value = userId;
-    await loadUser(userId);
-    if (params.get('link')) {
-      linkSelect.value = params.get('link');
-      await loadLinkStats(linkSelect.value);
-    }
+  const linkId = new URLSearchParams(location.search).get('link');
+  if (linkId) {
+    linkSelect.value = linkId;
+    if (linkSelect.value) await loadLinkStats(linkId);
   }
 }
-
-userSelect.addEventListener('change', () => {
-  if (userSelect.value) loadUser(userSelect.value).catch(showError);
-});
 
 linkSelect.addEventListener('change', () => {
   if (linkSelect.value) loadLinkStats(linkSelect.value).catch(showError);
@@ -181,6 +168,8 @@ linkSelect.addEventListener('change', () => {
 
 document.querySelectorAll('.typeSelect').forEach(select => {
   select.addEventListener('change', () => drawChart(select.dataset.chart));
+  fancySelect(select);
 });
+fancySelect(linkSelect);
 
-init().catch(showError);
+if (requireLogin()) init().catch(showError);

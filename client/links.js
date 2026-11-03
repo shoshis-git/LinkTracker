@@ -1,4 +1,3 @@
-const userSelect = document.getElementById('userSelect');
 const form = document.getElementById('linkForm');
 const formTitle = document.getElementById('formTitle');
 const submitBtn = document.getElementById('submitBtn');
@@ -8,7 +7,7 @@ const linksBox = document.getElementById('linksBox');
 
 let editingId = null;
 
-// ---------- שורות של מקורות (targets) בטופס ----------
+
 
 function addTargetRow(name = '', value = '') {
   const nameInput = el('input', { placeholder: 'שם (פייסבוק)', value: name, className: 'targetName' });
@@ -28,7 +27,6 @@ function readTargets() {
     .filter(t => t.name && t.value);
 }
 
-// ---------- רשימת הקישורים ----------
 
 function linkCard(link, i) {
   const shortLink = `${API}/${link._id}`;
@@ -54,7 +52,7 @@ function linkCard(link, i) {
     ),
     chips.length ? el('div', { className: 'chips' }, ...chips) : '',
     el('div', { className: 'row' },
-      el('a', { className: 'btn btn-sm', textContent: '📊 סטטיסטיקות', href: `stats.html?user=${userSelect.value}&link=${link._id}` }),
+      el('a', { className: 'btn btn-sm', textContent: '📊 סטטיסטיקות', href: `stats.html?link=${link._id}` }),
       el('button', { className: 'btn btn-sm', textContent: 'עריכה', onclick: () => startEdit(link) }),
       el('button', { className: 'btn btn-sm btn-danger', textContent: 'מחיקה', onclick: () => deleteLink(link) })
     )
@@ -66,12 +64,9 @@ function emptyState(icon, text) {
 }
 
 async function loadLinks() {
+  const links = await request('/links');
   linksBox.innerHTML = '';
-  if (!userSelect.value) {
-    linksBox.append(emptyState('👆', 'בחרו משתמש כדי לראות את הקישורים שלו'));
-    return;
-  }
-  const links = await request(`/users/${userSelect.value}/links`);
+  document.getElementById('linksCount').textContent = `${links.length} קישורים`;
   if (links.length === 0) {
     linksBox.append(emptyState('🔗', 'עדיין אין קישורים - צרו את הראשון בטופס'));
     return;
@@ -79,7 +74,7 @@ async function loadLinks() {
   links.reverse().forEach((link, i) => linksBox.append(linkCard(link, i)));
 }
 
-// ---------- טופס הוספה / עריכה ----------
+
 
 function startEdit(link) {
   editingId = link._id;
@@ -114,7 +109,6 @@ async function deleteLink(link) {
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
-  if (!userSelect.value) return showMessage('קודם בחרו משתמש', true);
   const body = {
     originalUrl: form.originalUrl.value,
     targetParamName: form.targetParamName.value.trim(),
@@ -125,7 +119,7 @@ form.addEventListener('submit', async e => {
       await request(`/links/${editingId}`, 'PUT', body);
       showMessage('הקישור עודכן');
     } else {
-      const link = await request('/links', 'POST', { ...body, userId: userSelect.value });
+      const link = await request('/links', 'POST', body);
       copyText(`${API}/${link._id}`).catch(() => {});
       showMessage('הקישור נוצר והועתק ללוח 🎉');
     }
@@ -136,19 +130,5 @@ form.addEventListener('submit', async e => {
 
 document.getElementById('addTargetBtn').addEventListener('click', () => addTargetRow());
 cancelBtn.addEventListener('click', resetForm);
-userSelect.addEventListener('change', () => {
-  resetForm();
-  loadLinks().catch(showError);
-});
 
-async function init() {
-  const users = await request('/users');
-  users.forEach(u => userSelect.add(new Option(`${u.name} (${u.email})`, u._id)));
-
-  // משתמש מה-URL (links.html?user=<id>), ואם אין - המשתמש המחובר
-  const userId = new URLSearchParams(location.search).get('user') || getCurrentUser()?._id;
-  if (userId && users.some(u => u._id === userId)) userSelect.value = userId;
-  await loadLinks();
-}
-
-init().catch(showError);
+if (requireLogin()) loadLinks().catch(showError);
