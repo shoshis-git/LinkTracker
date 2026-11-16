@@ -1,4 +1,5 @@
-const API = 'http://localhost:3000';
+// כתובת השרת מגיעה מ-config.js (נטען לפני הקובץ הזה)
+const API = ((window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'http://localhost:3000').replace(/\/+$/, '');
 
 
 function getSession() {
@@ -91,9 +92,7 @@ async function copyText(text) {
   showMessage('הועתק ✓');
 }
 
-// מחליף <select> רגיל בתפריט נפתח מעוצב.
-// ה-select המקורי נשאר (מוסתר) ומחזיק את הערך, כך שקוד שקורא select.value או מאזין ל-change ממשיך לעבוד.
-// אפשר להוסיף לכל option את data-badge כדי להציג תגית בצד
+
 function fancySelect(select) {
   const wrapper = el('div', { className: 'fselect' });
   const button = el('button', { type: 'button', className: 'fselect-btn' });

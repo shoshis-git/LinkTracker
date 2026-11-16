@@ -35,7 +35,9 @@ https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_
 ## מבנה הפרויקט
 
 ```
-├── index.js                  # נקודת הכניסה: חיבור ל-MongoDB, הגדרת ה-routes והפעלת השרת
+├── index.js                  # נקודת הכניסה: טעינת .env, בדיקת הגדרות, חיבור ל-MongoDB, הפעלה וכיבוי מסודר
+├── app.js                    # הגדרת Express: middleware, routes וטיפול בשגיאות (בלי חיבור למסד ובלי listen)
+├── config.js                 # קריאה ובדיקה של משתני הסביבה
 ├── Models/
 │   ├── User.js               # משתמש: שם, אימייל, סיסמה (hash), מערך מזהי קישורים
 │   └── link.js               # קישור: כתובת מקורית, קליקים, פרמטר ומקורות target
@@ -46,12 +48,16 @@ https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_
 │   ├── UserRouter.js         # /users
 │   └── LinkRouter.js         # /links
 ├── Middleware/
-│   └── auth.js               # בדיקת טוקן JWT בבקשות מוגנות
+│   ├── auth.js               # בדיקת טוקן JWT בבקשות מוגנות
+│   ├── validate.js           # בדיקת גוף הבקשה (משתמשים, התחברות, קישורים)
+│   └── errors.js             # בדיקת :id, תשובת 404 וטיפול מרכזי בשגיאות
+├── tests/                    # בדיקות אוטומטיות (node:test + supertest)
 └── client/                   # אפליקציית הקליינט
     ├── index.html            # דף הבית
     ├── users.html            # התחברות, הרשמה והחשבון שלי
     ├── links.html            # יצירה וניהול של קישורים
     ├── stats.html            # גרפים וסטטיסטיקות
+    ├── config.js             # כתובת השרת (API_URL) - המקום היחיד שצריך לשנות בין סביבות
     ├── common.js             # פונקציות משותפות: בקשות לשרת, ניהול התחברות, תפריט עליון
     └── style.css
 ```
@@ -89,23 +95,72 @@ https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_
 
 ## התקנה והרצה
 
-1. התקנת הספריות:
-   ```
-   npm install
-   ```
-2. יצירת קובץ `.env` בתיקייה הראשית (אפשר להעתיק מ-`.env.example`):
-   ```
-   MONGO_URI=mongodb://localhost:27017/tinyurl
-   PORT=3000
-   JWT_SECRET=<מחרוזת אקראית ארוכה>
-   ```
-3. הרצת השרת:
-   ```
-   npm run dev     # פיתוח, עם nodemon
-   npm start       # הרצה רגילה
-   ```
-4. הקליינט: פותחים את `client/index.html` בדפדפן, או עם התוסף Live Server של VS Code.
-   הכתובת של השרת מוגדרת בשורה הראשונה של `client/common.js`.
+### דרישות
+- Node.js 20.19 ומעלה (נבדק עם Node 22)
+- MongoDB שרץ מקומית או בענן (MongoDB Atlas). לבדיקות האוטומטיות **לא** צריך MongoDB, ראו בהמשך.
+
+### התקנה
+```
+npm install
+```
+
+### משתני סביבה
+יוצרים קובץ `.env` בתיקייה הראשית (אפשר להעתיק מ-`.env.example`). הקובץ לא נשמר ב-git.
+משתנים שכבר מוגדרים בסביבה (למשל ב-Docker) גוברים על הערכים שב-`.env`.
+
+| משתנה | חובה | תיאור | דוגמה |
+|---|---|---|---|
+| `MONGO_URI` | ✔ | כתובת החיבור ל-MongoDB. חייבת להתחיל ב-`mongodb://` או `mongodb+srv://` | `mongodb://localhost:27017/tinyurl` |
+| `PORT` | ✔ | הפורט של השרת (1-65535) | `3000` |
+| `JWT_SECRET` | ✔ | הסוד לחתימת טוקנים. לפחות 32 תווים (ב-production זו שגיאה, בפיתוח רק אזהרה) | ערך אקראי, ראו למטה |
+| `NODE_ENV` | | `development` (ברירת מחדל) או `production` | `production` |
+| `CORS_ORIGINS` | ב-production | רשימת origins מופרדת בפסיקים שמותר להם לפנות לשרת. בפיתוח, בלי ערך, מותר הכול | `http://localhost:5500,http://127.0.0.1:5500` |
+| `TRUST_PROXY` | | ההגדרה `trust proxy` של Express: `true`, `false`, מספר proxies, או רשימת כתובות. ברירת מחדל `false`. צריך להגדיר רק כשהשרת רץ מאחורי reverse proxy, כדי שה-IP של הקליקים יהיה ה-IP האמיתי | `1` |
+
+יצירת `JWT_SECRET` אקראי:
+```
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+אם משתנה חובה חסר או לא תקין, השרת לא עולה. הוא מדפיס את רשימת הבעיות ויוצא עם קוד 1.
+
+### הרצת השרת
+```
+npm run dev     # פיתוח, עם nodemon
+npm start       # הרצה רגילה
+```
+השרת מתחיל להאזין רק אחרי שהחיבור ל-MongoDB הצליח. אם החיבור נכשל (תוך 5 שניות), השרת יוצא עם קוד 1.
+
+אם החיבור למסד נופל בזמן שהשרת רץ, השרת ממשיך לרוץ: כל בקשה שצריכה את המסד מקבלת מיד `503 {"message":"Database unavailable"}`, ו-`/health` מחזיר `503`. כשהמסד חוזר, החיבור מתחדש אוטומטית (בדרך כלל תוך כמה שניות) והבקשות עובדות שוב.
+כשהשרת מקבל `SIGINT` (Ctrl+C) או `SIGTERM`, הוא מפסיק לקבל בקשות חדשות, מסיים את הבקשות הפתוחות, סוגר את החיבור למסד ויוצא.
+
+### הרצת הקליינט
+פותחים את `client/index.html` בדפדפן, או עם התוסף Live Server של VS Code.
+
+כתובת השרת מוגדרת בקובץ אחד, [client/config.js](client/config.js):
+```js
+window.APP_CONFIG = {
+  API_URL: 'http://localhost:3000'
+};
+```
+בסביבה אחרת (למשל Docker) מחליפים רק את הקובץ הזה. אין צורך ב-build.
+אם מגדירים `CORS_ORIGINS` בשרת, צריך לכלול בו את הכתובת שממנה הקליינט נטען (למשל `http://127.0.0.1:5500` של Live Server).
+
+### בדיקות אוטומטיות
+```
+npm test             # הרצת כל הבדיקות (יוצא עם קוד שונה מ-0 אם בדיקה נכשלה)
+npm run test:watch   # הרצה מחדש בכל שינוי
+npm run check        # בדיקת תחביר של קבצי השרת
+```
+- הבדיקות משתמשות ב-test runner המובנה של Node (`node:test`) וב-[supertest](https://github.com/ladjs/supertest).
+- כל קובץ בדיקות מקבל מסד נתונים **זמני בזיכרון** ([mongodb-memory-server](https://github.com/typegoose/mongodb-memory-server)), שנמחק בסוף. הבדיקות לא נוגעות במסד של הפיתוח.
+- בהרצה הראשונה mongodb-memory-server מוריד קובץ הרצה של MongoDB (בערך 100MB), ושומר אותו ב-cache.
+- אפשר להריץ את הבדיקות מול MongoDB אמיתי, למשל ב-CI, עם `TEST_MONGO_URI`. שם המסד בכתובת **חייב להכיל "test"**, והוא נמחק בסוף ההרצה:
+  ```
+  TEST_MONGO_URI=mongodb://localhost:27017/linktracker-test npm test
+  ```
+
+הבדיקות מכסות: הרשמה והתחברות, פרטי התחברות שגויים, גישה בלי טוקן או עם טוקן לא תקין או שפג תוקפו, CRUD לקישורים, הפרדה בין משתמשים, redirect ושמירת קליקים, סטטיסטיקות, קלט לא תקין, משאבים שלא קיימים, `/health`, CORS ובדיקת משתני הסביבה.
 
 ## API
 
@@ -115,10 +170,11 @@ Authorization: Bearer <token>
 ```
 את הטוקן מקבלים בתשובה להרשמה או להתחברות. הוא בתוקף ל-24 שעות.
 
-### Redirect
+### Redirect ובריאות
 | Method | Path | תיאור |
 |---|---|---|
 | GET | `/:id` | שומר קליק ומפנה (302) לכתובת המקורית. אם יש בכתובת פרמטר בשם של `targetParamName` (למשל `?t=fb`), הערך שלו נשמר כמקור של הקליק |
+| GET | `/health` | מצב השרת והחיבור למסד: `200 { "status": "ok", "db": "connected" }`, או `503 { "status": "error", "db": "disconnected" }` כשאין חיבור למסד |
 
 ### משתמשים - `/users`
 | Method | Path | | תיאור |
@@ -147,10 +203,25 @@ Authorization: Bearer <token>
 קליק בלי פרמטר target, או עם ערך שלא מוגדר ב-`targetValues`, נספר כ-`unknown`.
 
 ### הרשאות
-- בלי טוקן, או עם טוקן לא תקין: `401`
+- בלי טוקן, או עם טוקן לא תקין: `401` (`Missing token` / `Invalid token` / `Token expired`)
 - גישה למשתמש אחר: `403`
 - גישה לקישור של משתמש אחר: `404`, כדי לא לחשוף שהקישור קיים
 - אי אפשר לשנות קליקים דרך ה-API. הם נוצרים רק דרך ה-redirect.
+- `GET /links/summary` ציבורי בכוונה: דף הבית מציג את המונים גם לאורחים. הוא מחזיר רק מספרים כלליים.
+
+### בדיקות קלט ושגיאות
+- `originalUrl` חייב להיות כתובת `http://` או `https://` תקינה.
+- `targetParamName`: אותיות, ספרות, `_` או `-` בלבד.
+- `targetValues`: מערך של `{ name, value }`, שני השדות מחרוזות לא ריקות.
+- `email` חייב להיות כתובת תקינה, ו-`password` צריכה להיות באורך 6-72 תווים (בהרשמה ובעדכון).
+
+| קוד | מתי |
+|---|---|
+| `400` | קלט לא תקין, JSON שבור או מזהה (`:id`) לא תקין. בגוף התשובה: `{ message, errors? }` |
+| `401` / `403` / `404` | ראו הרשאות למעלה. `404` גם לנתיב שלא קיים |
+| `409` | אימייל שכבר רשום |
+| `503` | אין חיבור למסד הנתונים: `{ "message": "Database unavailable" }` |
+| `500` | שגיאה לא צפויה. בלוג של השרת נרשמים רק שם השגיאה וההודעה, והם לא נשלחים ללקוח |
 
 ## דוגמה לשימוש ב-Targeting
 
