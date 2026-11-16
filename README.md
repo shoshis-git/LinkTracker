@@ -196,11 +196,17 @@ Compose קורא משתנים מהסביבה או מקובץ `.env` שליד `co
 | `FRONTEND_PORT` | | `8080` | הפורט של האתר במחשב |
 | `BACKEND_PORT` | | `3000` | הפורט של ה-API במחשב |
 | `API_URL` | | `http://localhost:${BACKEND_PORT}` | כתובת ה-API כפי שהדפדפן רואה אותה. נכתבת ל-`config.js` בכל עלייה של הקונטיינר, בלי build מחדש |
-| `CORS_ORIGINS` | | `http://localhost:${FRONTEND_PORT}` | ה-origins שמותר להם לפנות ל-API |
 
-`MONGO_URI`, `PORT`, `NODE_ENV=production` ו-`TRUST_PROXY=false` מוגדרים ב-`compose.yaml`. גם אם `.env` מכיל `MONGO_URI=mongodb://localhost...` להרצה מקומית, הוא לא משפיע על הקונטיינרים.
+`MONGO_URI`, `PORT`, `NODE_ENV=production`, `CORS_ORIGINS=http://localhost:8080` ו-`TRUST_PROXY=false` מוגדרים ישירות ב-`compose.yaml`.
+הקובץ `.env` משמש רק להשלמת `${...}` ב-`compose.yaml`, ולא נטען לקונטיינרים. לכן גם אם `.env` מכיל `MONGO_URI` או `CORS_ORIGINS` להרצה מקומית, הם לא משפיעים על Docker.
 
-> שימו לב: אם ב-`.env` מוגדר `CORS_ORIGINS` להרצה מקומית (למשל `http://127.0.0.1:5500`), הוא יגבר על ברירת המחדל ב-Docker. במקרה כזה הוסיפו לו גם את `http://localhost:8080`.
+> שימו לב: אם משנים את `FRONTEND_PORT`, צריך לעדכן גם את `CORS_ORIGINS` של שירות `backend` ב-`compose.yaml` לכתובת החדשה (למשל `http://localhost:9090`). אחרת הדפדפן יחסום את הבקשות ל-API.
+
+### Nginx (ה-frontend)
+- הקבצים של `client/` מועתקים ל-image כמו שהם, בלי build.
+- בעליית הקונטיינר הסקריפט [docker/nginx/40-app-config.sh](docker/nginx/40-app-config.sh) יוצר את `config.js` מתוך `API_URL`. הכתובת חייבת להתחיל ב-`http://` או `https://`, אחרת הקונטיינר לא עולה.
+- `config.js` מוגש עם `Cache-Control: no-store`, כך ששינוי של `API_URL` נכנס לתוקף מיד.
+- כותרות אבטחה: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, וגם gzip לקבצי CSS, JS ו-SVG.
 
 ### הפעלה
 ```
@@ -251,13 +257,13 @@ Authorization: Bearer <token>
 ### Redirect ובריאות
 | Method | Path | תיאור |
 |---|---|---|
-| GET | `/:id` | שומר קליק ומפנה (302) לכתובת המקורית. אם יש בכתובת פרמטר בשם של `targetParamName` (למשל `?t=fb`), הערך שלו נשמר כמקור של הקליק |
+| GET | `/:id` | שומר קליק ומפנה (302) לכתובת המקורית. אם יש בכתובת פרמטר בשם של `targetParamName` (למשל `?t=fb`), הערך שלו נשמר כמקור של הקליק. אם הפרמטר מופיע כמה פעמים, נשמר הערך הראשון. קישור שלא קיים מחזיר `404` |
 | GET | `/health` | מצב השרת והחיבור למסד: `200 { "status": "ok", "db": "connected" }`, או `503 { "status": "error", "db": "disconnected" }` כשאין חיבור למסד |
 
 ### משתמשים - `/users`
 | Method | Path | | תיאור |
 |---|---|---|---|
-| POST | `/users` | | הרשמה. גוף הבקשה: `{ name, email, password }`. מחזיר `{ token, user }` |
+| POST | `/users` | | הרשמה. גוף הבקשה: `{ name, email, password }`. מחזיר `201 { token, user }` |
 | POST | `/users/login` | | התחברות. גוף הבקשה: `{ email, password }`. מחזיר `{ token, user }` |
 | GET | `/users/:id` | 🔒 | פרטי המשתמש (רק של המשתמש המחובר) |
 | PUT | `/users/:id` | 🔒 | עדכון `name`, `email` או `password` |
@@ -269,7 +275,7 @@ Authorization: Bearer <token>
 | GET | `/links/summary` | | מספר המשתמשים, הקישורים והקליקים במערכת (לדף הבית) |
 | GET | `/links` | 🔒 | כל הקישורים של המשתמש המחובר |
 | GET | `/links/:id` | 🔒 | קישור אחד |
-| POST | `/links` | 🔒 | יצירת קישור. גוף הבקשה: `{ originalUrl, targetParamName?, targetValues? }` |
+| POST | `/links` | 🔒 | יצירת קישור. גוף הבקשה: `{ originalUrl, targetParamName?, targetValues? }`. מחזיר `201` עם הקישור |
 | PUT | `/links/:id` | 🔒 | עדכון `originalUrl`, `targetParamName` או `targetValues` |
 | DELETE | `/links/:id` | 🔒 | מחיקת קישור |
 | GET | `/links/:id/stats` | 🔒 | פילוח הקליקים לפי מקור |
@@ -288,16 +294,20 @@ Authorization: Bearer <token>
 - `GET /links/summary` ציבורי בכוונה: דף הבית מציג את המונים גם לאורחים. הוא מחזיר רק מספרים כלליים.
 
 ### בדיקות קלט ושגיאות
-- `originalUrl` חייב להיות כתובת `http://` או `https://` תקינה.
-- `targetParamName`: אותיות, ספרות, `_` או `-` בלבד.
-- `targetValues`: מערך של `{ name, value }`, שני השדות מחרוזות לא ריקות.
+- `originalUrl` חייב להיות כתובת `http://` או `https://` תקינה, עד 2048 תווים.
+- `targetParamName`: אותיות, ספרות, `_` או `-` בלבד, עד 50 תווים.
+- `targetValues`: מערך של עד 50 פריטים `{ name, value }`. שני השדות מחרוזות לא ריקות, עד 100 תווים.
+- `name`: מחרוזת לא ריקה, עד 100 תווים.
 - `email` חייב להיות כתובת תקינה, ו-`password` צריכה להיות באורך 6-72 תווים (בהרשמה ובעדכון).
+- בעדכון (`PUT`) נבדקים רק השדות שנשלחו.
+- גוף הבקשה חייב להיות אובייקט JSON, בגודל של עד 100KB.
 
 | קוד | מתי |
 |---|---|
 | `400` | קלט לא תקין, JSON שבור או מזהה (`:id`) לא תקין. בגוף התשובה: `{ message, errors? }` |
 | `401` / `403` / `404` | ראו הרשאות למעלה. `404` גם לנתיב שלא קיים |
 | `409` | אימייל שכבר רשום |
+| `413` | גוף הבקשה גדול מ-100KB |
 | `503` | אין חיבור למסד הנתונים: `{ "message": "Database unavailable" }` |
 | `500` | שגיאה לא צפויה. בלוג של השרת נרשמים רק שם השגיאה וההודעה, והם לא נשלחים ללקוח |
 
@@ -338,5 +348,9 @@ http://localhost:3000/<id>?t=mail   ← ברשימת התפוצה
 2. **Tracking**: מנגנון ה-redirect ושמירת הקליקים.
 3. **Targeting**: מקורות פרסום וסטטיסטיקות לפי מקור.
 
-אחרי שלושת הספרינטים נוספו הצפנת סיסמאות, התחברות עם JWT ואפליקציית הקליינט עם Chart.js.
+אחרי שלושת הספרינטים נוספו:
+- הצפנת סיסמאות, התחברות עם JWT ואפליקציית הקליינט עם Chart.js.
+- בדיקת משתני סביבה בעלייה, בדיקות קלט, טיפול מרכזי בשגיאות, `/health`, התמודדות עם נפילת המסד וכיבוי מסודר.
+- בדיקות אוטומטיות עם `node:test`, supertest ו-mongodb-memory-server.
+- הרצה עם Docker Compose: frontend (Nginx), backend ו-MongoDB.
 
