@@ -31,6 +31,7 @@ https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_
 - **מסד נתונים:** MongoDB עם Mongoose
 - **אבטחה:** jsonwebtoken, bcryptjs, cors
 - **קליינט:** HTML, CSS, JavaScript (בלי framework), Chart.js
+- **הרצה:** Docker, Docker Compose, Nginx
 
 ## מבנה הפרויקט
 
@@ -52,6 +53,11 @@ https://drive.google.com/file/d/1GpVAwrwFmu2RcbJyBTMxzzHaBtZBOky/view?usp=share_
 │   ├── validate.js           # בדיקת גוף הבקשה (משתמשים, התחברות, קישורים)
 │   └── errors.js             # בדיקת :id, תשובת 404 וטיפול מרכזי בשגיאות
 ├── tests/                    # בדיקות אוטומטיות (node:test + supertest)
+├── Dockerfile                # image של ה-backend
+├── compose.yaml              # frontend + backend + mongo
+├── docker/
+│   ├── frontend.Dockerfile   # image של ה-frontend (Nginx)
+│   └── nginx/                # הגדרות Nginx וסקריפט שיוצר את config.js בעליית הקונטיינר
 └── client/                   # אפליקציית הקליינט
     ├── index.html            # דף הבית
     ├── users.html            # התחברות, הרשמה והחשבון שלי
@@ -160,7 +166,79 @@ npm run check        # בדיקת תחביר של קבצי השרת
   TEST_MONGO_URI=mongodb://localhost:27017/linktracker-test npm test
   ```
 
-הבדיקות מכסות: הרשמה והתחברות, פרטי התחברות שגויים, גישה בלי טוקן או עם טוקן לא תקין או שפג תוקפו, CRUD לקישורים, הפרדה בין משתמשים, redirect ושמירת קליקים, סטטיסטיקות, קלט לא תקין, משאבים שלא קיימים, `/health`, CORS ובדיקת משתני הסביבה.
+הבדיקות מכסות: הרשמה והתחברות, פרטי התחברות שגויים, גישה בלי טוקן או עם טוקן לא תקין או שפג תוקפו, CRUD לקישורים, הפרדה בין משתמשים, redirect ושמירת קליקים, סטטיסטיקות, קלט לא תקין, משאבים שלא קיימים, `/health`, CORS, נפילה וחזרה של המסד ובדיקת משתני הסביבה.
+
+## הרצה עם Docker
+
+### דרישות
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows / macOS), או Docker Engine עם התוסף Docker Compose v2 (Linux).
+- לא צריך להתקין Node.js או MongoDB על המחשב.
+
+### מבנה
+| שירות | Image | תפקיד | פורט במחשב |
+|---|---|---|---|
+| `frontend` | `nginx:1.28-alpine` | מגיש את הקבצים של `client/` | `8080` |
+| `backend` | `node:22-alpine` | שרת ה-API (`node index.js`), רץ כמשתמש `node` ולא כ-root | `3000` |
+| `mongo` | `mongo:8.0` | מסד הנתונים, עם volume קבוע בשם `mongo-data` | לא נפתח למחשב |
+
+- `mongo` ו-`backend` נמצאים ברשת פנימית (`db`) בלי גישה החוצה. ה-backend מתחבר למסד בכתובת `mongodb://mongo:27017/tinyurl`.
+- הדפדפן פונה ישירות ל-backend (פורט 3000), ולכן גם הפורט הזה פתוח.
+- סדר העלייה: `mongo` עולה ראשון. `backend` מתחיל רק אחרי ש-`mongo` מדווח healthy, ו-`frontend` מתחיל אחרי ש-`backend` מדווח healthy.
+- לכל שירות יש health check: `mongo` עם `mongosh` (פקודת `ping`), `backend` עם `GET /health`, ו-`frontend` עם בקשה לדף הבית.
+- `restart: unless-stopped`: קונטיינר שנפל עולה מחדש אוטומטית, חוץ מאשר אם עצרתם אותו בעצמכם.
+
+### משתני סביבה
+Compose קורא משתנים מהסביבה או מקובץ `.env` שליד `compose.yaml`. הקובץ **לא** מועתק לתוך ה-images.
+
+| משתנה | חובה | ברירת מחדל | תיאור |
+|---|---|---|---|
+| `JWT_SECRET` | ✔ | | הסוד לחתימת טוקנים, לפחות 32 תווים. בלעדיו `docker compose` לא יתחיל |
+| `FRONTEND_PORT` | | `8080` | הפורט של האתר במחשב |
+| `BACKEND_PORT` | | `3000` | הפורט של ה-API במחשב |
+| `API_URL` | | `http://localhost:${BACKEND_PORT}` | כתובת ה-API כפי שהדפדפן רואה אותה. נכתבת ל-`config.js` בכל עלייה של הקונטיינר, בלי build מחדש |
+| `CORS_ORIGINS` | | `http://localhost:${FRONTEND_PORT}` | ה-origins שמותר להם לפנות ל-API |
+
+`MONGO_URI`, `PORT`, `NODE_ENV=production` ו-`TRUST_PROXY=false` מוגדרים ב-`compose.yaml`. גם אם `.env` מכיל `MONGO_URI=mongodb://localhost...` להרצה מקומית, הוא לא משפיע על הקונטיינרים.
+
+> שימו לב: אם ב-`.env` מוגדר `CORS_ORIGINS` להרצה מקומית (למשל `http://127.0.0.1:5500`), הוא יגבר על ברירת המחדל ב-Docker. במקרה כזה הוסיפו לו גם את `http://localhost:8080`.
+
+### הפעלה
+```
+docker compose up -d --build
+```
+- `--build` בונה את ה-images מחדש (צריך אחרי שינוי בקוד).
+- כדי לחכות עד שכל השירותים healthy: `docker compose up -d --build --wait`.
+
+אחרי העלייה:
+- האתר: http://localhost:8080
+- ה-API: http://localhost:3000 (למשל http://localhost:3000/health)
+
+### מצב, לוגים ועצירה
+```
+docker compose ps                  # מצב השירותים (healthy / unhealthy)
+docker compose logs -f             # הלוגים של כל השירותים
+docker compose logs -f backend     # הלוגים של שירות אחד
+docker compose stop                # עצירה (הקונטיינרים נשארים)
+docker compose start               # הפעלה מחדש אחרי stop
+docker compose down                # עצירה ומחיקת הקונטיינרים והרשתות. הנתונים נשמרים
+```
+
+### הנתונים של MongoDB
+הנתונים נשמרים ב-volume בשם `linktracker_mongo-data`. הם נשארים גם אחרי `docker compose down`, אחרי בנייה מחדש ואחרי הפעלה מחדש של המחשב.
+
+```
+docker volume ls                   # רשימת ה-volumes
+docker compose down -v             # ⚠ מחיקת הקונטיינרים **וגם כל הנתונים** של המסד
+```
+
+גיבוי ושחזור (אופציונלי):
+```
+docker compose exec -T mongo mongodump --db tinyurl --archive > backup.archive
+docker compose exec -T mongo mongorestore --archive < backup.archive
+```
+
+### אם המסד נופל
+אם `mongo` נעצר, ה-backend ממשיך לרוץ ומחזיר `503 Database unavailable`, וה-health check שלו מדווח unhealthy. כשהמסד חוזר, ה-backend מתחבר מחדש לבד, בדרך כלל תוך כמה שניות.
 
 ## API
 
@@ -261,3 +339,4 @@ http://localhost:3000/<id>?t=mail   ← ברשימת התפוצה
 3. **Targeting**: מקורות פרסום וסטטיסטיקות לפי מקור.
 
 אחרי שלושת הספרינטים נוספו הצפנת סיסמאות, התחברות עם JWT ואפליקציית הקליינט עם Chart.js.
+

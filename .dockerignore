@@ -1,0 +1,29 @@
+# Build context של ה-backend (Dockerfile בתיקייה הראשית)
+
+# סודות והגדרות מקומיות
+.env
+.env.*
+
+# תלויות ו-git
+node_modules
+npm-debug.log*
+.git
+.gitignore
+.gitattributes
+
+# בדיקות ותוצרים שלהן
+tests
+coverage
+.nyc_output
+*.log
+
+# קבצים שלא שייכים לשרת
+client
+docker
+compose.yaml
+compose.*.yaml
+Dockerfile
+*.md
+.vscode
+.idea
+.claude
