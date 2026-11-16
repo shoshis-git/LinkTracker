@@ -1,0 +1,6 @@
+# Build context של ה-frontend (docker/frontend.Dockerfile).
+# BuildKit משתמש בקובץ הזה במקום ב-.dockerignore הראשי.
+# מכניסים רק את מה שה-image צריך.
+*
+!client/
+!docker/nginx/

@@ -1,0 +1,88 @@
+# LinkTracker - frontend (Nginx) + backend (Express) + mongo
+#
+# משתנים נקראים מהסביבה או מקובץ .env שליד הקובץ הזה (Compose טוען אותו אוטומטית לצורך ${...}).
+# חובה: JWT_SECRET. כל השאר אופציונליים - ראו README.
+
+name: linktracker
+
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - db
+    # בלי ports: המסד נגיש רק ל-backend, ברשת הפנימית
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: linktracker-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # שם השירות ברשת של Compose, לא localhost
+      MONGO_URI: mongodb://mongo:27017/tinyurl
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in .env or in the environment}
+      # הכתובת שממנה הדפדפן טוען את ה-frontend
+      CORS_ORIGINS: "http://localhost:8080"
+      # הדפדפן פונה ישירות ל-backend (בלי reverse proxy)
+      TRUST_PROXY: "false"
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    networks:
+      - db
+      - web
+    healthcheck:
+      # wget קיים ב-node:alpine (busybox). נכשל גם על 503 - כלומר כשאין חיבור למסד.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    stop_grace_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    image: linktracker-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      # כתובת ה-API כפי שהדפדפן רואה אותה (נכתבת ל-config.js בעליית הקונטיינר)
+      API_URL: ${API_URL:-http://localhost:${BACKEND_PORT:-3000}}
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  mongo-data:
+
+networks:
+  # mongo <-> backend בלבד, בלי גישה החוצה
+  db:
+    internal: true
+  # backend + frontend, עם פורטים שפתוחים למחשב המארח
+  web:

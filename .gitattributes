@@ -1,0 +1,2 @@
+# סקריפטי shell רצים בתוך Linux - חייבים שורות LF גם כשעובדים ב-Windows
+*.sh text eol=lf
